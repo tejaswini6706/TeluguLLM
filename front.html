@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+  <meta charset="UTF-8">
+  <title>Telugu LLM App</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: 'Arial', sans-serif;
+    }
+    .container {
+      max-width: 600px;
+    }
+    .card {
+      background-color: #1e1e1e;
+      border: none;
+      border-radius: 10px;
+    }
+    .form-control, .btn {
+      border-radius: 8px;
+    }
+    .btn-primary {
+      background-color: #007bff;
+      border-color: #007bff;
+    }
+    .btn-primary:hover {
+      background-color: #0056b3;
+      border-color: #0056b3;
+    }
+    #output {
+      background-color: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      color: #ffffff;
+    }
+    .menu-btn {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .menu-btn div {
+      width: 25px;
+      height: 3px;
+      background-color: #ffffff;
+      margin: 4px 0;
+      border-radius: 2px;
+    }
+    .menu-btn:hover div {
+      background-color: #007bff;
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #1e1e1e;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      display: none; /* Initially hidden */
+      z-index: 1000;
+    }
+    .sidebar h5 {
+      color: #ffffff;
+      margin-bottom: 20px;
+    }
+    .sidebar a {
+      color: #007bff;
+      text-decoration: none;
+      display: block;
+      margin-bottom: 10px;
+    }
+    .sidebar a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <button class="menu-btn" onclick="toggleSidebar()">
+    <div></div>
+    <div></div>
+    <div></div>
+  </button>
+  <div class="sidebar" id="sidebar">
+    <h5>Options</h5>
+    <a href="#" onclick="showHistory()">History</a>
+    <a href="#" onclick="showNewChart()">New Chart</a>
+  </div>
+  <div class="container mt-5">
+    <h2 class="text-center mb-4">Telugu LLM Word Generator</h2>
+    <div class="card p-4 shadow">
+      <div class="mb-3">
+        <label for="teluguInput" class="form-label">Enter Telugu Letters:</label>
+        <input type="text" class="form-control" id="teluguInput" placeholder="ఉదా: కా, చి, తు">
+      </div>
+      <button class="btn btn-primary w-100" onclick="generateTelugu()">Generate</button>
+      <div id="output" class="mt-4"></div>
+    </div>
+    <div class="history" id="historySection" style="display: none;">
+      <h5>History</h5>
+      <div id="historyList"></div>
+    </div>
+    <div class="chart" id="chartSection" style="display: none;">
+      <h5>New Chart</h5>
+      <p>Chart functionality coming soon...</p>
+    </div>
+  </div>
+
+  <script>
+    const history = [];
+
+    async function generateTelugu() {
+      const input = document.getElementById("teluguInput").value;
+      const output = document.getElementById("output");
+      output.innerHTML = "<p>Loading...</p>";
+
+      try {
+        const response = await fetch("http://localhost:3000/api/llm/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ input })
+        });
+        const data = await response.json();
+        const result = data.output;
+
+        // Update output
+        output.innerHTML = `<h5>Output:</h5><p>${result}</p>`;
+
+        // Add to history
+        history.push({ input, result });
+        updateHistory();
+      } catch (err) {
+        output.innerHTML = "<p>Error generating output.</p>";
+        console.error(err);
+      }
+    }
+
+    function updateHistory() {
+      const historyList = document.getElementById("historyList");
+      historyList.innerHTML = history
+        .map(item => `<div class="history-item"><strong>Input:</strong> ${item.input}<br><strong>Output:</strong> ${item.result}</div>`)
+        .join("");
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      sidebar.style.display = sidebar.style.display === "none" ? "block" : "none";
+    }
+
+    function showHistory() {
+      document.getElementById("historySection").style.display = "block";
+      document.getElementById("chartSection").style.display = "none";
+    }
+
+    function showNewChart() {
+      document.getElementById("chartSection").style.display = "block";
+      document.getElementById("historySection").style.display = "none";
+    }
+  </script>
+</body>
+</html>
