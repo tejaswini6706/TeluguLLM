@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>తెలుగు LLM చాట్‌బాట్</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for Inter font and general aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+        }
+        .container {
+            max-width: 800px;
+        }
+        /* Loading spinner */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="container bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-6">తెలుగు LLM చాట్‌బాట్</h1>
+        <p class="text-center text-gray-600 mb-8">
+            మీ తెలుగు ప్రశ్నలకు సమాధానం ఇవ్వడానికి నేను సిద్ధంగా ఉన్నాను!
+        </p>
+
+        <div class="mb-6">
+            <label for="userInput" class="block text-gray-700 text-lg font-semibold mb-2">మీ ప్రశ్న (Your Question):</label>
+            <textarea
+                id="userInput"
+                class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 h-28 resize-y"
+                placeholder="తెలుగులో మీ ప్రశ్నను ఇక్కడ టైప్ చేయండి..."
+            ></textarea>
+        </div>
+
+        <div class="flex justify-center mb-6">
+            <button
+                id="generateBtn"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 flex items-center justify-center"
+            >
+                <span id="buttonText">సమాధానం పొందండి (Get Answer)</span>
+                <div id="loader" class="loader ml-3 hidden"></div>
+            </button>
+        </div>
+
+        <div>
+            <label for="llmResponse" class="block text-gray-700 text-lg font-semibold mb-2">LLM సమాధానం (LLM Response):</label>
+            <textarea
+                id="llmResponse"
+                class="w-full p-4 border border-gray-300 rounded-lg bg-gray-50 text-gray-800 h-48 resize-y"
+                readonly
+                placeholder="ఇక్కడ LLM సమాధానం కనిపిస్తుంది..."
+            ></textarea>
+        </div>
+
+        <div id="errorMessage" class="text-red-600 text-center mt-4 hidden">
+            సమస్య ఏర్పడింది. దయచేసి మళ్ళీ ప్రయత్నించండి. (An error occurred. Please try again.)
+        </div>
+    </div>
+
+    <script>
+        const userInput = document.getElementById('userInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const llmResponse = document.getElementById('llmResponse');
+        const loader = document.getElementById('loader');
+        const buttonText = document.getElementById('buttonText');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // IMPORTANT: Ensure this matches the port your Flask backend is running on
+        const BACKEND_URL = 'http://127.0.0.1:5000/generate';
+
+        generateBtn.addEventListener('click', async () => {
+            const text = userInput.value.trim();
+            if (!text) {
+                alert('దయచేసి మీ ప్రశ్నను నమోదు చేయండి. (Please enter your question.)');
+                return;
+            }
+
+            // Show loading indicator
+            buttonText.textContent = 'జనరేట్ అవుతోంది...'; // Generating...
+            loader.classList.remove('hidden');
+            generateBtn.disabled = true;
+            llmResponse.value = ''; // Clear previous response
+            errorMessage.classList.add('hidden'); // Hide any previous error
+
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                llmResponse.value = data.response || 'సమాధానం అందుబాటులో లేదు. (No response available.)';
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessage.classList.remove('hidden');
+                llmResponse.value = 'సమస్య ఏర్పడింది. దయచేసి మళ్ళీ ప్రయత్నించండి. (An error occurred. Please try again.)';
+            } finally {
+                // Hide loading indicator
+                buttonText.textContent = 'సమాధానం పొందండి (Get Answer)';
+                loader.classList.add('hidden');
+                generateBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
