@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>తెలుగు LLM చాట్‌బాట్</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .chat-bubble {
+            animation: fadeInUp 0.5s ease-out;
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div class="container glass-effect p-8 rounded-2xl shadow-2xl">
+        <div class="text-center mb-8">
+            <h1 class="text-5xl font-bold text-white mb-4">తెలుగు LLM చాట్‌బాట్</h1>
+            <p class="text-white/80 text-lg">
+                మీ తెలుగు ప్రశ్నలకు సమాధానం ఇవ్వడానికి నేను సిద్ధంగా ఉన్నాను!
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+                <div>
+                    <label for="userInput" class="block text-white text-lg font-semibold mb-3">
+                        మీ ప్రశ్న (Your Question):
+                    </label>
+                    <textarea
+                        id="userInput"
+                        class="w-full p-4 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white placeholder-white/60 h-32 resize-none backdrop-blur-sm"
+                        placeholder="తెలుగులో మీ ప్రశ్నను ఇక్కడ టైప్ చేయండి..."
+                    ></textarea>
+                </div>
+
+                <button
+                    id="generateBtn"
+                    class="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white/50 flex items-center justify-center backdrop-blur-sm"
+                >
+                    <span id="buttonText">సమాధానం పొందండి (Get Answer)</span>
+                    <div id="loader" class="loader ml-3 hidden"></div>
+                </button>
+            </div>
+
+            <div>
+                <label for="llmResponse" class="block text-white text-lg font-semibold mb-3">
+                    LLM సమాధానం (LLM Response):
+                </label>
+                <div
+                    id="llmResponse"
+                    class="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white h-48 overflow-y-auto backdrop-blur-sm"
+                >
+                    <div class="text-white/60 italic">
+                        ఇక్కడ LLM సమాధానం కనిపిస్తుంది...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="text-red-300 text-center mt-6 p-4 bg-red-500/20 rounded-xl backdrop-blur-sm hidden">
+            సమస్య ఏర్పడింది. దయచేసి మళ్ళీ ప్రయత్నించండి. (An error occurred. Please try again.)
+        </div>
+
+        <div class="mt-8 text-center">
+            <p class="text-white/60 text-sm">
+                Powered by Telugu-LLM-Labs/Indic-gemma-7b-finetuned-sft-Navarasa-2.0
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const userInput = document.getElementById('userInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const llmResponse = document.getElementById('llmResponse');
+        const loader = document.getElementById('loader');
+        const buttonText = document.getElementById('buttonText');
+        const errorMessage = document.getElementById('errorMessage');
+
+        const BACKEND_URL = 'http://127.0.0.1:5000/generate';
+
+        generateBtn.addEventListener('click', async () => {
+            const text = userInput.value.trim();
+            if (!text) {
+                alert('దయచేసి మీ ప్రశ్నను నమోదు చేయండి. (Please enter your question.)');
+                return;
+            }
+
+            // Show loading indicator
+            buttonText.textContent = 'జనరేట్ అవుతోంది...';
+            loader.classList.remove('hidden');
+            generateBtn.disabled = true;
+            llmResponse.innerHTML = '<div class="text-white/60 italic">Processing your request...</div>';
+            errorMessage.classList.add('hidden');
+
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const responseText = data.response || 'సమాధానం అందుబాటులో లేదు. (No response available.)';
+                
+                llmResponse.innerHTML = `<div class="chat-bubble text-white">${responseText}</div>`;
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessage.classList.remove('hidden');
+                llmResponse.innerHTML = '<div class="text-red-300">సమస్య ఏర్పడింది. దయచేసి మళ్ళీ ప్రయత్నించండి.</div>';
+            } finally {
+                buttonText.textContent = 'సమాధానం పొందండి (Get Answer)';
+                loader.classList.add('hidden');
+                generateBtn.disabled = false;
+            }
+        });
+
+        // Allow Enter key to submit
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                generateBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
